@@ -1,0 +1,24 @@
+[project]
+name = "litmapr"
+version = "0.1.0"
+description = "Interactive 3D plot-point maps for books and comics"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "typer>=0.27.3",
+]
+
+[project.scripts]
+litmapr = "litmapr.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
+
+

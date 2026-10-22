@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.venv/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+
+# Your books/comics and generated maps - never commit these
+data/
+*.cbz
+*.cbr
+*.pdf
+*.epub
