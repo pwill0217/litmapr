@@ -1,0 +1,13 @@
+name: CI
+
+on: [push, pull_request]   # run on every push and every PR
+
+jobs:
+  test:
+    runs-on: ubuntu-latest   # a fresh Linux machine on GitHub's servers
+    steps:
+      - uses: actions/checkout@v4      # download your code
+      - uses: astral-sh/setup-uv@v6    # install uv
+      - run: uv sync                   # install your project + dev tools
+      - run: uv run ruff check .
+      - run: uv run pytest

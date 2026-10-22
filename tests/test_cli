@@ -1,9 +1,0 @@
-from typer.testing import CliRunner
-from litmapr import app
-
-runner = CliRunner()
-
-def test_app():
-    result = runner.invoke(app, ["hello", "welcom to litmapr!"])
-    assert result.exit_code == 0
-    assert "Hello User" in result.stdout
