@@ -5,6 +5,8 @@ description = "Interactive 3D plot-point maps for books and comics"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "cbz>=4.0.0",
+    "pymupdf>=1.28,<2",
     "typer>=0.27.3",
 ]
 
@@ -17,6 +19,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "pillow>=13.0.0",
     "pytest>=9.1.1",
     "ruff>=0.17.1",
 ]
