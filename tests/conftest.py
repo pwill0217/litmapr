@@ -5,6 +5,8 @@ import pytest
 from cbz import ComicInfo, PageInfo
 from PIL import Image
 
+from litmapr.extract.base import TextExtractor
+
 
 def tiny_png(color: str) -> bytes:
     """Make a 10x10 image in memory and return its PNG bytes."""
@@ -33,3 +35,28 @@ def sample_pdf(tmp_path):
     document.save(path)
     document.close()
     return path
+
+
+class FakeExtractor(TextExtractor):
+    """Stands in for the real vision model in tests: no Ollama, no GPU."""
+
+    def __init__(self, text: str | None = "BOOM!", scene: str = "A test scene."):
+        self.text = text
+        self.scene = scene
+        self.calls = 0  # how many times the "model" was asked
+
+    def transcribe(self, image: bytes) -> str | None:
+        self.calls += 1
+        return self.text
+
+    def describe(self, image: bytes) -> str:
+        self.calls += 1
+        return self.scene
+
+
+@pytest.fixture
+def fake_extractor(monkeypatch):
+    """Make `litmapr inspect --ocr` use a FakeExtractor instead of Ollama."""
+    fake = FakeExtractor()
+    monkeypatch.setattr("litmapr.cli.make_extractor", lambda model: fake)
+    return fake

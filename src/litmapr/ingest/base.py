@@ -8,7 +8,8 @@ class Page:
     number: int
     image: bytes
     text: str | None
-    path: str | None
+    scene: str | None = None
+    path: str | None = None
 
 
 class Reader(ABC):
