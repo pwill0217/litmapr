@@ -1,3 +1,6 @@
+import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from itertools import islice
 from pathlib import Path
 from typing import Annotated
@@ -5,11 +8,14 @@ from typing import Annotated
 import ollama
 import typer
 
+from litmapr.cache import PageCache, file_hash
 from litmapr.extract.base import TextExtractor
 from litmapr.extract.ollama_vision import DEFAULT_MODEL, OllamaVisionExtractor
 from litmapr.ingest.base import Reader
 from litmapr.ingest.cbz_reader import CbzReader
 from litmapr.ingest.pdf_reader import PdfReader
+from litmapr.output import default_output_path, write_pages_json
+from litmapr.pipeline import read_pages
 
 app = typer.Typer()
 
@@ -38,13 +44,66 @@ def make_extractor(model: str) -> TextExtractor:
     return OllamaVisionExtractor(model=model)
 
 
+@contextmanager
+def friendly_ollama_errors(model: str, after: str = "") -> Iterator[None]:
+    """Turn Ollama's exceptions into a clear message and exit code 1."""
+    try:
+        yield
+    except ConnectionError:
+        print(
+            f"Can't reach Ollama. Is it running? Start the Ollama app and try again.{after}"
+        )
+        raise typer.Exit(code=1) from None
+    except ollama.ResponseError as error:
+        print(f"Ollama error with model '{model}': {error.error}{after}")
+        raise typer.Exit(code=1) from None
+
+
 @app.command()
-def ingest(path: Annotated[Path, typer.Argument(exists=True, dir_okay=False)]):
-    """Import a book or comic file."""
+def ingest(
+    path: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    ocr: Annotated[
+        bool, typer.Option(help="Read page images with a local vision model.")
+    ] = False,
+    model: Annotated[
+        str, typer.Option(help="Ollama vision model for --ocr.")
+    ] = DEFAULT_MODEL,
+    out: Annotated[
+        Path | None,
+        typer.Option(help="Where to write the JSON. Default: data/maps/<name>.json"),
+    ] = None,
+) -> None:
+    """Read every page of a book or comic and save the words to a JSON file."""
     reader = get_reader(path)
-    pages = list(reader.pages())  # the reader does all the real work here
-    with_text = sum(1 for page in pages if page.text)
-    print(f"found {len(pages)} pages in {path} ({with_text} with text)")
+    source_hash = file_hash(path)
+    output = out or default_output_path(path)
+
+    if ocr:
+        extractor = make_extractor(model)
+        cache = PageCache(source_hash, model)
+        print(f"reading {path.name} with {model} (cache: {cache.path})")
+        results = []
+        with friendly_ollama_errors(
+            model, after="\nPages read so far are cached; re-run to continue."
+        ):
+            start = time.perf_counter()
+            for page, source in read_pages(reader.pages(), extractor, cache):
+                results.append((page, source))
+                elapsed = time.perf_counter() - start
+                print(f"  page {page.number}: {source} ({elapsed:.1f}s)")
+                start = time.perf_counter()
+    else:
+        results = [
+            (page, "text_layer" if page.text else "none") for page in reader.pages()
+        ]
+
+    write_pages_json(output, path, source_hash, model if ocr else None, results)
+
+    with_text = sum(1 for page, _ in results if page.text)
+    print(f"found {len(results)} pages in {path} ({with_text} with text)")
+    print(f"saved to {output}")
+    if not ocr and with_text < len(results):
+        print("Some pages have no text layer; add --ocr to read their images.")
 
 
 @app.command()
@@ -72,16 +131,8 @@ def inspect(
         raise typer.Exit(code=1)
 
     if ocr:
-        try:
+        with friendly_ollama_errors(model):
             found = make_extractor(model).extract(found)
-        except ConnectionError:
-            print(
-                "Can't reach Ollama. Is it running? Start the Ollama app and try again."
-            )
-            raise typer.Exit(code=1) from None
-        except ollama.ResponseError as error:
-            print(f"Ollama error with model '{model}': {error.error}")
-            raise typer.Exit(code=1) from None
 
     print(f"--- page {found.number} of {path.name} ---")
     if found.text:

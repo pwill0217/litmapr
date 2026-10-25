@@ -60,3 +60,13 @@ def fake_extractor(monkeypatch):
     fake = FakeExtractor()
     monkeypatch.setattr("litmapr.cli.make_extractor", lambda model: fake)
     return fake
+
+
+@pytest.fixture(autouse=True)
+def run_in_temp_folder(tmp_path, monkeypatch):
+    """Run every test inside its own temp folder.
+
+    Commands write to data/cache and data/maps relative to the current folder;
+    this keeps tests from filling the real project's data/ folder.
+    """
+    monkeypatch.chdir(tmp_path)
