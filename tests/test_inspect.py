@@ -68,3 +68,22 @@ def test_inspect_ocr_when_ollama_is_not_running(sample_cbz, monkeypatch):
     result = runner.invoke(app, ["inspect", str(sample_cbz), "--ocr"])
     assert result.exit_code == 1
     assert "Is it running?" in result.stdout
+
+
+def test_ingest_carries_on_past_an_unreadable_page(sample_cbz, monkeypatch):
+    from conftest import FakeExtractor, tiny_png
+
+    from litmapr.extract.base import PageReadError
+
+    class StuckOnGreen(FakeExtractor):
+        def transcribe(self, image):
+            if image == tiny_png("green"):
+                raise PageReadError("stuck")
+            return super().transcribe(image)
+
+    monkeypatch.setattr("litmapr.cli.make_extractor", lambda model: StuckOnGreen())
+    result = runner.invoke(app, ["ingest", str(sample_cbz), "--ocr"])
+    assert result.exit_code == 0, result.stdout
+    assert "page 2: failed, skipped for now" in result.stdout
+    assert "page 3: model" in result.stdout
+    assert "1 page(s) couldn't be read (2)" in result.stdout

@@ -19,3 +19,10 @@ class Reader(ABC):
     @abstractmethod
     def pages(self):
         """Yield Page objects, one per page."""
+
+    def metadata(self) -> dict:
+        """Facts the file states about itself: series, issue, year, month.
+
+        Not abstract: formats with no such info (most PDFs) just return {}.
+        """
+        return {}

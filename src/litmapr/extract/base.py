@@ -4,6 +4,10 @@ from dataclasses import replace
 from litmapr.ingest.base import Page
 
 
+class PageReadError(Exception):
+    """The model couldn't read one page. Skip it and carry on with the rest."""
+
+
 class TextExtractor(ABC):
     """Turns a page image into words: what it says, and what happens."""
 

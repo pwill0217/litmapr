@@ -6,12 +6,19 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "cbz>=4.0.0",
+    "fastapi>=0.162.0",
     "ollama>=0.6.3",
     "pillow>=13.0.0",
     "pydantic>=2.14",
     "pymupdf>=1.28,<2",
     "typer>=0.27.3",
+    "uvicorn>=0.54.0",
 ]
+
+[project.optional-dependencies]
+# Background removal for character portraits. Large (about 1 GB with its
+# AI model), so it's opt-in: uv sync --extra portraits
+portraits = ["rembg[cpu]>=2.0.86"]
 
 [project.scripts]
 litmapr = "litmapr.cli:app"
@@ -22,6 +29,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.16.0",
     "pytest>=9.1.1",
     "ruff>=0.17.1",
 ]

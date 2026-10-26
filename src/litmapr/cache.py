@@ -53,3 +53,30 @@ class PageCache:
         temporary = self.path.with_suffix(".tmp")
         temporary.write_text(json.dumps(self._entries, indent=2), encoding="utf-8")
         temporary.replace(self.path)
+
+
+class ResponseCache:
+    """Remembers a model's raw answers by key, in one JSON file.
+
+    Used for Phase 3 extraction: re-running the same chunk with the same
+    model and prompt version costs nothing.
+    """
+
+    def __init__(self, name: str, cache_dir: Path = DEFAULT_CACHE_DIR):
+        safe_name = name.replace(":", "_").replace("/", "_")
+        self.path = Path(cache_dir) / f"{safe_name}.json"
+        self._entries: dict[str, str] = (
+            json.loads(self.path.read_text(encoding="utf-8"))
+            if self.path.exists()
+            else {}
+        )
+
+    def get(self, key: str) -> str | None:
+        return self._entries.get(key)
+
+    def put(self, key: str, value: str) -> None:
+        self._entries[key] = value
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self.path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(self._entries, indent=2), encoding="utf-8")
+        temporary.replace(self.path)

@@ -11,7 +11,7 @@ from typing import Self
 
 from litmapr.model import Callback, Entity, Mention, Relation, Story, Work
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 3
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS works (
@@ -23,7 +23,10 @@ CREATE TABLE IF NOT EXISTS works (
     year           INTEGER,
     month          INTEGER,
     source_hash    TEXT,
-    order_override REAL
+    order_override REAL,
+    first_page     INTEGER,           -- omnibus: where this issue starts in the file
+    last_page      INTEGER,
+    source_path    TEXT               -- the comic file on disk (only used locally)
 );
 
 CREATE TABLE IF NOT EXISTS entities (
@@ -100,7 +103,21 @@ class StoryStore:
         # SQLite only enforces REFERENCES when this is switched on.
         self.db.execute("PRAGMA foreign_keys = ON")
         self.db.executescript(SCHEMA)
+        self._upgrade()
         self.db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+    def _upgrade(self) -> None:
+        """Bring a database made by an older litmapr up to date.
+
+        CREATE TABLE IF NOT EXISTS skips tables that already exist, so new
+        columns have to be added to old databases by hand. This is called a
+        migration.
+        """
+        columns = {row["name"] for row in self.db.execute("PRAGMA table_info(works)")}
+        added = {"first_page": "INTEGER", "last_page": "INTEGER", "source_path": "TEXT"}
+        for column, kind in added.items():
+            if column not in columns:
+                self.db.execute(f"ALTER TABLE works ADD COLUMN {column} {kind}")
 
     def __enter__(self) -> Self:
         return self
@@ -135,6 +152,76 @@ class StoryStore:
             for relation in story.relations:
                 self._upsert("relations", relation.model_dump())
             for callback in story.callbacks:
+                self._upsert("callbacks", callback.model_dump())
+
+    def clear_work(self, work_id: str) -> None:
+        """Delete a work's mentions and relations (their callbacks go too,
+        by cascade), so re-extracting an issue replaces it instead of
+        adding duplicates. Entities stay: they may appear in other works."""
+        with self.db:
+            self.db.execute("DELETE FROM mentions WHERE work_id = ?", (work_id,))
+            self.db.execute("DELETE FROM relations WHERE work_id = ?", (work_id,))
+
+    def remove_orphans(self) -> int:
+        """Delete entities with no appearances and no relationships (stray names
+        from ads or credits). Returns how many were removed."""
+        with self.db:
+            cursor = self.db.execute(
+                """
+                DELETE FROM entities
+                WHERE id NOT IN (SELECT entity_id FROM mentions)
+                  AND id NOT IN (SELECT source_id FROM relations)
+                  AND id NOT IN (SELECT target_id FROM relations)
+                """
+            )
+        return cursor.rowcount
+
+    def delete_work(self, work_id: str) -> None:
+        """Remove a work and, by cascade, its mentions, relations and callbacks."""
+        with self.db:
+            self.db.execute("DELETE FROM works WHERE id = ?", (work_id,))
+
+    def merge_entities(self, keep_id: str, drop_id: str) -> None:
+        """Fold one entity into another: its mentions, relations and names move
+        to `keep`, then it is deleted. All-or-nothing."""
+        keep = self.get_entity(keep_id)
+        drop = self.get_entity(drop_id)
+        with self.db:
+            self.db.execute(
+                "UPDATE mentions SET entity_id = ? WHERE entity_id = ?",
+                (keep_id, drop_id),
+            )
+            self.db.execute(
+                "UPDATE relations SET source_id = ? WHERE source_id = ?",
+                (keep_id, drop_id),
+            )
+            self.db.execute(
+                "UPDATE relations SET target_id = ? WHERE target_id = ?",
+                (keep_id, drop_id),
+            )
+            # "Reed loves Mr. Fantastic" became "Reed loves Reed": meaningless, so remove.
+            self.db.execute("DELETE FROM relations WHERE source_id = target_id")
+
+            known = keep.all_names()
+            position = len(keep.aliases)
+            for name in [drop.name, *drop.aliases]:
+                if name.lower() not in known:
+                    self.db.execute(
+                        "INSERT INTO aliases (entity_id, alias, position) VALUES (?, ?, ?)",
+                        (keep_id, name, position),
+                    )
+                    known.add(name.lower())
+                    position += 1
+            if not keep.description and drop.description:
+                self.db.execute(
+                    "UPDATE entities SET description = ? WHERE id = ?",
+                    (drop.description, keep_id),
+                )
+            self.db.execute("DELETE FROM entities WHERE id = ?", (drop_id,))
+
+    def add_callbacks(self, callbacks) -> None:
+        with self.db:
+            for callback in callbacks:
                 self._upsert("callbacks", callback.model_dump())
 
     def _upsert(self, table: str, row: dict) -> None:

@@ -57,9 +57,21 @@ class Work(BaseModel):
     year: int | None = None
     month: int | None = Field(default=None, ge=1, le=12)
     source_hash: str | None = None  # links back to the file it came from
+    source_path: str | None = None  # where that file was, to revisit pages (portraits)
+    # For an omnibus (many issues in one file): the pages of the file this
+    # issue covers. None means the work is the whole file.
+    first_page: int | None = Field(default=None, ge=1)
+    last_page: int | None = Field(default=None, ge=1)
     # Same scale as the automatic order (year * 100 + month), so
     # 202605.5 means "read this in the middle of May 2026's issues".
     order_override: float | None = None
+
+    def local_page(self, page: int) -> int:
+        """Turn a page of the file into a page of this issue.
+
+        Omnibus page 612, in an issue that starts on page 601, is page 12.
+        """
+        return page - self.first_page + 1 if self.first_page else page
 
     @property
     def issue_number(self) -> float:

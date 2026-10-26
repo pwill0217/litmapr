@@ -53,3 +53,23 @@ def test_crash_keeps_finished_pages(tmp_path):
     reopened = PageCache("abc", "fake", cache_dir=tmp_path)
     assert reopened.get(1) is not None  # page 1 survived the crash
     assert reopened.get(2) is None
+
+
+def test_unreadable_page_is_skipped_and_retried_next_time(tmp_path):
+    from litmapr.extract.base import PageReadError
+
+    class StuckOnGreen(FakeExtractor):
+        def transcribe(self, image):
+            if image == tiny_png("green"):
+                raise PageReadError("the model kept repeating itself")
+            return super().transcribe(image)
+
+    pages = [
+        Page(number=1, image=tiny_png("red"), text=None),
+        Page(number=2, image=tiny_png("green"), text=None),
+        Page(number=3, image=tiny_png("blue"), text=None),
+    ]
+    cache = PageCache("abc", "fake", cache_dir=tmp_path)
+    sources = [source for _, source in read_pages(pages, StuckOnGreen(), cache)]
+    assert sources == ["model", "failed", "model"]  # page 3 still got read
+    assert cache.get(2) is None  # not cached, so the next run tries again

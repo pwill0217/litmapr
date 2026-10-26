@@ -138,3 +138,10 @@ def test_data_survives_closing_the_file(tmp_path, two_issue_story):
         store.save(two_issue_story)
     with StoryStore(path) as reopened:
         assert len(reopened.load().mentions) == 3
+
+
+def test_remove_orphans(store, two_issue_story):
+    two_issue_story.add_entity("Avengers Assemble: Part One", EntityKind.EVENT)
+    store.save(two_issue_story)
+    assert store.remove_orphans() == 1
+    assert [e.name for e in store.load().entities] == ["Thaddeus Ross"]

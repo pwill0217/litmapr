@@ -20,6 +20,7 @@ def write_pages_json(
     source_hash: str,
     model: str | None,
     pages: list[tuple[Page, str]],
+    metadata: dict | None = None,
 ) -> None:
     """Save every page's words to a JSON file. Images are left out on purpose.
 
@@ -30,7 +31,10 @@ def write_pages_json(
         "format_version": FORMAT_VERSION,
         "source_file": source.name,
         "source_hash": source_hash,
+        "source_path": str(source.resolve()),
         "model": model,
+        # What the file says about itself (ComicInfo.xml): series, issue, year, month.
+        "metadata": metadata or {},
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "page_count": len(pages),
         "pages": [
