@@ -192,9 +192,8 @@ def test_missing_model_says_how_to_get_it(capsys):
 
     from litmapr.cli import friendly_ollama_errors
 
-    with pytest.raises(typer.Exit):
-        with friendly_ollama_errors("qwen3.6:35b-a3b-coding"):
-            raise ollama.ResponseError("model 'nomic-embed-text' not found", 404)
+    with pytest.raises(typer.Exit), friendly_ollama_errors("qwen3.6:35b-a3b-coding"):
+        raise ollama.ResponseError("model 'nomic-embed-text' not found", 404)
     out = capsys.readouterr().out
     assert "ollama pull nomic-embed-text" in out
     assert "qwen3.6" not in out
