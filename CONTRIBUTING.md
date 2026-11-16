@@ -24,7 +24,7 @@ Both must pass before a pull request is merged; CI checks them on every push.
 | `narrator.py` | Phase 6: spoiler-safe explanations |
 | `model.py` | The data model (Pydantic) |
 | `store.py` | SQLite storage |
-| `web/` | FastAPI server and the 3D explorer page |
+| `web/` | FastAPI server, the 3D explorer page, and the Studio (`studio.py` + `jobs.py` run commands in the background) |
 | `cli.py` | Commands. Kept thin: it calls the modules above |
 
 ## Adding a file format

@@ -8,6 +8,7 @@ reader's progress is ever sent to the browser: spoiler control.
 
 from collections import Counter
 from collections.abc import Callable
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import ollama
@@ -33,6 +34,8 @@ from litmapr.portraits import (
     remove_portrait,
 )
 from litmapr.store import StoryStore
+from litmapr.web.jobs import JobRunner
+from litmapr.web.studio import LOCAL_HOSTS, build_router
 
 STATIC = Path(__file__).parent / "static"
 MAX_UPLOAD = 15 * 1024 * 1024  # bytes
@@ -189,10 +192,23 @@ def create_app(
     db_path: Path,
     llm_factory: Callable[[], TextLLM] | None = None,
     portraits: Path | None = DEFAULT_PORTRAIT_DIR,
+    runner: JobRunner | None = None,
+    allowed_hosts: set[str] = LOCAL_HOSTS,
 ) -> FastAPI:
     """Build the web app. With no llm_factory the narrator is switched off, and
-    with portraits=None no comic artwork is served (both useful for a public demo)."""
-    app = FastAPI(title="litmapr")
+    with portraits=None no comic artwork is served (both useful for a public demo).
+    With a runner the Studio is switched on: it runs commands, so it is only
+    for your own computer."""
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        yield
+        if runner is not None:
+            runner.close()  # don't leave a command running after Ctrl+C
+
+    app = FastAPI(title="litmapr", lifespan=lifespan)
+    if runner is not None:
+        app.include_router(build_router(db_path, runner, allowed_hosts))
     narration_cache = ResponseCache("narration")
 
     def load() -> Story:
@@ -230,6 +246,7 @@ def create_app(
             "narrator": llm_factory is not None,
             "portraits": portraits is not None,
             "styles": list(STYLES),
+            "studio": runner is not None,
         }
 
     @app.get("/api/portrait/{entity_id}")
@@ -316,6 +333,12 @@ def create_app(
     @app.get("/")
     def index() -> FileResponse:
         return FileResponse(STATIC / "index.html")
+
+    @app.get("/studio")
+    def studio() -> FileResponse:
+        if runner is None:
+            raise HTTPException(status_code=404, detail="The Studio is turned off.")
+        return FileResponse(STATIC / "studio.html")
 
     app.mount("/static", StaticFiles(directory=STATIC), name="static")
     return app

@@ -42,6 +42,7 @@
       <input id="search" type="search" placeholder="Find a character, place or idea" list="names" autocomplete="off" aria-label="Find in the map">
       <datalist id="names"></datalist>
     </form>
+    <a class="studio-link" id="studio-link" href="/studio" hidden>Studio</a>
   </header>
 
   <nav class="rail" id="rail" aria-label="Show or hide kinds of entities"></nav>
@@ -55,6 +56,7 @@
     <div class="empty-ring" aria-hidden="true"></div>
     <h2 id="empty-title">The map is empty</h2>
     <p id="empty-text">Add a comic with <code>uv run litmapr add yourcomic.cbz</code>, then reload this page.</p>
+    <a class="studio-cta" id="empty-studio" href="/studio#add" hidden>Add comics in the Studio</a>
   </section>
 
   <aside id="dossier" class="dossier" aria-labelledby="d-name" hidden>

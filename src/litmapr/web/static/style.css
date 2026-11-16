@@ -96,13 +96,20 @@ code { font-family: var(--mono); background: var(--cobalt-dim); padding: 1px 6px
 /* ---- top bar ---- */
 .top {
   position: fixed; inset: 0 0 auto 0; z-index: 5; display: grid;
-  grid-template-columns: auto minmax(220px, 1fr) minmax(200px, 320px); gap: 24px; align-items: center;
+  grid-template-columns: auto minmax(220px, 1fr) minmax(200px, 320px) auto; gap: 24px; align-items: center;
   padding: 12px 20px; background: linear-gradient(var(--void) 40%, rgba(2, 3, 10, 0));
 }
 .brand {
   display: flex; align-items: center; gap: 10px; color: var(--frost); text-decoration: none;
   font-weight: 700; font-size: 20px; letter-spacing: 0.04em;
 }
+.studio-link, .studio-cta {
+  display: inline-flex; align-items: center; height: 38px; padding: 0 16px; text-decoration: none;
+  border: 1px solid var(--signal); color: var(--signal); font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; font-size: 13px; transition: background 0.2s, color 0.2s;
+}
+.studio-link:hover, .studio-cta:hover { background: var(--signal); color: var(--void); }
+.studio-cta { margin-top: 14px; justify-self: center; pointer-events: auto; }
 .brand-mark {
   width: 18px; height: 18px; border: 2px solid var(--signal); transform: rotate(45deg);
   box-shadow: inset 0 0 0 3px var(--void), inset 0 0 0 10px var(--cobalt);
@@ -331,7 +338,8 @@ code { font-family: var(--mono); background: var(--cobalt-dim); padding: 1px 6px
 }
 
 @media (max-width: 900px) {
-  .top { grid-template-columns: auto 1fr; gap: 12px; padding: 10px 16px; }
+  .top { grid-template-columns: auto 1fr auto; gap: 12px; padding: 10px 16px; }
+  .studio-link { padding: 0 10px; }
   .scrubber { grid-column: 1 / -1; grid-row: 2; grid-template-columns: 1fr auto; }
   .scrub-label { display: none; }
   .rail { top: auto; bottom: 46px; left: 16px; right: 16px; transform: none; display: flex; overflow-x: auto; border-left: none; padding: 0; }

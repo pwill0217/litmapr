@@ -189,6 +189,7 @@ async function loadGraph() {
   const empty = state.data.nodes.length === 0;
   $("empty").hidden = !empty;
   if (empty && state.works.length) {
+    $("empty-studio").hidden = true;
     $("empty-title").textContent = "Nothing yet at this reading point";
     $("empty-text").textContent = "Move the reading point further along to see the story so far.";
   }
@@ -646,6 +647,11 @@ function wire() {
 async function start() {
   wire();
   state.config = await getJSON("/api/config");
+  $("studio-link").hidden = !state.config.studio;
+  $("empty-studio").hidden = !state.config.studio;
+  if (state.config.studio) {
+    $("empty-text").textContent = "Add a comic and litmapr reads it onto the map.";
+  }
   await loadWorks();
   await loadGraph();
 }

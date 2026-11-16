@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>litmapr Studio</title>
+  <link rel="stylesheet" href="/static/studio.css">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-library" viewBox="0 0 24 24"><path d="M4 3h4v18H4zM10 3h4v18h-4z"/><path d="M16.5 4.2l3.8-1 3 17.4-3.8 1z"/></symbol>
+    <symbol id="i-add" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/><path d="M2 6V2h4M22 6V2h-4M2 18v4h4M22 18v4h-4"/></symbol>
+    <symbol id="i-omnibus" viewBox="0 0 24 24"><path d="M3 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H3zM21 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z"/><path d="M5.5 9h4M5.5 12h4M14.5 9h4"/></symbol>
+    <symbol id="i-tidy" viewBox="0 0 24 24"><circle cx="7" cy="7" r="3.5"/><circle cx="17" cy="7" r="3.5"/><path d="M7 10.5v2.5a4 4 0 0 0 4 4h1M17 10.5v2.5a4 4 0 0 1-4 4h-1M12 17v4.5"/></symbol>
+    <symbol id="i-pictures" viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.6"/><path d="M5 20c1.2-3.6 3.8-5.2 7-5.2s5.8 1.6 7 5.2"/><path d="M2 7V2h5M22 7V2h-5M2 17v5h5M22 17v5h-5"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 13v8h16v-8"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 1.8v3.4M12 18.8v3.4M1.8 12h3.4M18.8 12h3.4M4.8 4.8l2.4 2.4M16.8 16.8l2.4 2.4M4.8 19.2l2.4-2.4M16.8 7.2l2.4-2.4"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M2.5 5.5h7l2 2.5h10v11.5h-19z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M5 2.5h9.5l4.5 4.5v14.5H5z"/><path d="M14.5 2.5V7H19"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 20V5M5.5 11.5L12 5l6.5 6.5"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12"/></symbol>
+  </svg>
+
+  <div class="field" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="brand" href="/"><span class="brand-mark"></span>litmapr</a>
+    <nav class="views" aria-label="Views">
+      <a href="/">Map</a>
+      <a href="/studio" aria-current="page">Studio</a>
+    </nav>
+    <p class="db-path" id="db-path"></p>
+  </header>
+
+  <div class="layout">
+    <nav class="sections" aria-label="Studio sections" id="sections">
+      <button data-section="library" aria-current="true"><svg class="icon"><use href="#i-library"/></svg><span>Library</span></button>
+      <button data-section="add"><svg class="icon"><use href="#i-add"/></svg><span>Add comics</span></button>
+      <button data-section="omnibus"><svg class="icon"><use href="#i-omnibus"/></svg><span>Omnibus</span></button>
+      <button data-section="tidy"><svg class="icon"><use href="#i-tidy"/></svg><span>Tidy up</span></button>
+      <button data-section="pictures"><svg class="icon"><use href="#i-pictures"/></svg><span>Pictures</span></button>
+      <button data-section="share"><svg class="icon"><use href="#i-share"/></svg><span>Share</span></button>
+      <button data-section="settings"><svg class="icon"><use href="#i-settings"/></svg><span>Models</span></button>
+    </nav>
+
+    <main class="sheet" id="sheet">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+
+      <!-- ============================================================ library -->
+      <section id="library" class="section">
+        <p class="eyebrow">Library</p>
+        <h1>What's on your map</h1>
+        <p class="lede">Every issue in reading order. Removing an issue takes away everything found only in it.</p>
+        <div class="stats" id="stats"></div>
+        <div id="library-list" class="table-wrap"></div>
+        <div class="empty" id="library-empty" hidden>
+          <p>No comics on the map yet.</p>
+          <button class="cta" data-goto="add">Add your first comic</button>
+        </div>
+      </section>
+
+      <!-- ============================================================ add -->
+      <section id="add" class="section" hidden>
+        <p class="eyebrow">Add comics</p>
+        <h1>Read a comic onto the map</h1>
+        <p class="lede">Pick a <code>.cbz</code> or <code>.pdf</code>, or a whole folder of them. litmapr reads every page, finds who and what is in it, and adds it to the map.</p>
+
+        <div class="pick">
+          <label class="label" for="add-path">Comic file or folder</label>
+          <div class="row">
+            <input id="add-path" class="grow mono" placeholder="D:\comics\Fantastic Four 570.cbz" autocomplete="off" spellcheck="false">
+            <button class="ghost" type="button" data-browse="add-path" data-folders="yes">Browse</button>
+          </div>
+          <div class="browser" id="browser" hidden></div>
+          <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="drop-help">
+            <strong>Drop comics here</strong>
+            <span id="drop-help">They're copied into <code id="library-folder">data/library</code>, so you can add them from anywhere.</span>
+            <input type="file" id="drop-input" accept=".cbz,.pdf" multiple hidden>
+          </div>
+          <div class="uploads" id="uploads"></div>
+          <p class="note" id="contents-note" hidden></p>
+        </div>
+
+        <fieldset class="details">
+          <legend>Details <span class="optional">optional</span></legend>
+          <div class="grid3">
+            <label><span class="label">Series</span><input id="add-series" placeholder="From the file"></label>
+            <label><span class="label">Year</span><input id="add-year" type="number" min="1800" max="2200" placeholder="2009"></label>
+            <label><span class="label">Month</span>
+              <select id="add-month">
+                <option value="">-</option>
+                <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+                <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+                <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+                <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+              </select>
+            </label>
+          </div>
+          <p class="hint" id="date-hint">Year and month put each issue in reading order across series. An omnibus takes its dates from its contents file.</p>
+        </fieldset>
+
+        <div class="actions">
+          <button class="cta" id="add-run">Add to map</button>
+          <p class="hint">Takes a while: every page goes through the vision model the first time. Reading again is instant.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ omnibus -->
+      <section id="omnibus" class="section" hidden>
+        <p class="eyebrow">Omnibus</p>
+        <h1>Where each issue starts</h1>
+        <p class="lede">An omnibus holds many issues in one file. Its contents file tells litmapr where each one begins, so every issue gets its own place in the reading order. <strong>Add comics</strong> uses it automatically.</p>
+
+        <label class="label" for="omni-path">Omnibus file</label>
+        <div class="row">
+          <input id="omni-path" class="grow mono" placeholder="D:\comics\Hickman FF Omnibus.cbz" autocomplete="off" spellcheck="false">
+          <button class="ghost" type="button" data-browse="omni-path">Browse</button>
+          <button class="ghost" type="button" id="omni-load">Open</button>
+        </div>
+        <div class="browser" id="omni-browser" hidden></div>
+
+        <div class="actions tight">
+          <button class="ghost" id="omni-draft">Draft from bookmarks</button>
+          <label class="check"><input type="checkbox" id="omni-force"> Start over if one exists</label>
+        </div>
+
+        <label class="label" for="omni-text">Contents file <span class="mono dim" id="omni-file"></span></label>
+        <textarea id="omni-text" class="mono" rows="12" spellcheck="false" placeholder="# first page, series, issue, year, month
+6,   Fantastic Four, 570, 2009, 10
+29,  Fantastic Four, 571, 2009, 11
+118, skip"></textarea>
+        <p class="hint">One issue per line: <code>first page, series, issue, year, month</code>. <code>N, skip</code> leaves out pages from N on (ads, sketches). Lines starting with <code>#</code> are notes.</p>
+        <div class="actions">
+          <button class="cta" id="omni-save">Save contents</button>
+          <p class="status" id="omni-status" role="status"></p>
+        </div>
+      </section>
+
+      <!-- ============================================================ tidy -->
+      <section id="tidy" class="section" hidden>
+        <p class="eyebrow">Tidy up</p>
+        <h1>Merge duplicates, find callbacks</h1>
+
+        <div class="card">
+          <h2>Merge duplicates</h2>
+          <p>Finds entries that are one character under two names ("Invisible Woman" and "Susan Storm"), and checks each pair with the text model before merging. Preview first: it shows the decisions without changing anything.</p>
+          <div class="actions tight">
+            <button class="ghost" id="merge-preview">Preview</button>
+            <button class="cta" id="merge-run">Merge</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Merge two by hand</h2>
+          <p>For a pair the model missed. The second one is folded into the first, with its appearances, connections and picture.</p>
+          <div class="grid2">
+            <label><span class="label">Keep</span><input id="keep" list="names" placeholder="Reed Richards" autocomplete="off"></label>
+            <label><span class="label">Fold in</span><input id="drop-name" list="names" placeholder="Mr. Fantastic" autocomplete="off"></label>
+          </div>
+          <div class="actions tight"><button class="cta" id="merge-two">Merge these two</button></div>
+        </div>
+
+        <div class="card">
+          <h2>Find callbacks</h2>
+          <p>Looks for later moments that echo earlier ones across issues, like a device that comes back. Run it after adding new issues.</p>
+          <div class="actions tight"><button class="cta" id="link-run">Find callbacks</button></div>
+        </div>
+      </section>
+
+      <!-- ============================================================ pictures -->
+      <section id="pictures" class="section" hidden>
+        <p class="eyebrow">Pictures</p>
+        <h1>Faces and places for the map</h1>
+        <p class="lede">Cuts pictures out of your own comics for the markers and dossiers. A wrong one can be replaced or removed from its dossier on the map.</p>
+
+        <div class="card">
+          <h2>Make pictures</h2>
+          <span class="label">Kinds</span>
+          <div class="kinds" id="kinds"></div>
+          <div class="grid2">
+            <label><span class="label">Most-seen of each kind</span><input id="pic-top" type="number" min="1" max="500" value="30"></label>
+            <label class="check pad"><input type="checkbox" id="pic-force"> Redo ones that already have a picture</label>
+          </div>
+          <div class="actions tight"><button class="cta" id="pic-run">Make pictures</button></div>
+        </div>
+
+        <div class="card">
+          <h2>One entry, one page</h2>
+          <p>When the model can't find someone, point it at a page where they're drawn big.</p>
+          <div class="grid3">
+            <label><span class="label">Name</span><input id="pic-name" list="names" placeholder="Spider-Man" autocomplete="off"></label>
+            <label><span class="label">Issue</span><select id="pic-issue"></select></label>
+            <label><span class="label">Page of that issue</span><input id="pic-page" type="number" min="1" placeholder="8"></label>
+          </div>
+          <div class="actions tight"><button class="cta" id="pic-one">Look on this page</button></div>
+        </div>
+      </section>
+
+      <!-- ============================================================ share -->
+      <section id="share" class="section" hidden>
+        <p class="eyebrow">Share</p>
+        <h1>Export and import maps</h1>
+        <p class="lede">A map file holds names, short summaries and brief quotes, never comic pages or pictures, and none of your folder names.</p>
+        <div class="card">
+          <h2>Export</h2>
+          <p>Save the whole map as one file, to back it up or send to a friend.</p>
+          <div class="actions tight"><button class="cta" id="export">Download map</button></div>
+        </div>
+        <div class="card">
+          <h2>Import</h2>
+          <p>Add a map someone exported to yours. Entries with the same id are updated.</p>
+          <div class="actions tight">
+            <button class="ghost" id="import-pick">Choose a map file</button>
+            <input type="file" id="import-file" accept=".json,application/json" hidden>
+            <p class="status" id="import-status" role="status"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ settings -->
+      <section id="settings" class="section" hidden>
+        <p class="eyebrow">Models</p>
+        <h1>Which local models do the work</h1>
+        <p class="lede">Any model you have in Ollama. Leave a box empty for the default. Saved in this browser.</p>
+        <div class="models">
+          <label><span class="label">Reads pages and finds pictures (vision)</span><input id="m-vision" class="mono" autocomplete="off" spellcheck="false"></label>
+          <label><span class="label">Finds entities, merges, callbacks (text)</span><input id="m-text" class="mono" autocomplete="off" spellcheck="false"></label>
+          <label><span class="label">Spots likely duplicates (embeddings)</span><input id="m-embed" class="mono" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <p class="hint">Missing a model? In a terminal: <code id="pull-hint">ollama pull qwen2.5vl:3b</code>. The narrator's model is set when the server starts: <code>litmapr studio --model qwen3:4b-instruct</code>.</p>
+        <div class="actions tight">
+          <button class="ghost" id="models-reset">Back to defaults</button>
+          <p class="status" id="models-status" role="status"></p>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============================================================ console -->
+    <aside class="console" aria-label="Running commands">
+      <div class="console-head">
+        <p class="eyebrow">Console</p>
+        <span class="pulse" id="pulse" aria-hidden="true"></span>
+      </div>
+      <div id="job" class="job" hidden>
+        <div class="job-top">
+          <div>
+            <h2 id="job-title"></h2>
+            <p class="job-meta"><span id="job-status" class="pill"></span> <span id="job-time"></span></p>
+          </div>
+          <button class="stop" id="job-stop" title="Stop this command"><svg class="icon"><use href="#i-stop"/></svg>Stop</button>
+        </div>
+        <p class="job-command mono" id="job-command" title="The same command in a terminal"></p>
+        <pre class="log" id="log" tabindex="0" aria-live="off"></pre>
+      </div>
+      <p class="console-empty" id="console-empty">Commands you start show their progress here. They run one at a time, so the GPU isn't shared.</p>
+      <h3 class="history-title" id="history-title" hidden>Recent</h3>
+      <ol class="history" id="history"></ol>
+    </aside>
+  </div>
+
+  <datalist id="names"></datalist>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/static/studio.js"></script>
+</body>
+</html>

@@ -1004,10 +1004,19 @@ def serve(
         bool,
         typer.Option("--portraits/--no-portraits", help="Show character portraits."),
     ] = True,
+    studio_on: Annotated[
+        bool | None,
+        typer.Option(
+            "--studio/--no-studio",
+            help="The Studio page that runs commands. Default: on when only this "
+            "computer can reach the server.",
+        ),
+    ] = None,
     model: Annotated[str, typer.Option(help="Ollama text model for the narrator.")] = (
         DEFAULT_NARRATOR_MODEL
     ),
     db: Annotated[Path, typer.Option(help="The story database.")] = DEFAULT_DB,
+    page: Annotated[str, typer.Option(hidden=True)] = "",
 ) -> None:
     """Start the 3D explorer in your browser."""
     import threading
@@ -1015,17 +1024,88 @@ def serve(
 
     import uvicorn
 
+    from litmapr.portraits import DEFAULT_PORTRAIT_DIR
     from litmapr.web.api import create_app
+    from litmapr.web.jobs import JobRunner
+    from litmapr.web.studio import LOCAL_HOSTS
 
-    if not db.exists():
+    local = host in LOCAL_HOSTS
+    if studio_on is None:
+        studio_on = local
+    elif studio_on and not local:
+        print("The Studio runs commands on this computer, so it only works with")
+        print("--host 127.0.0.1. Leave out --studio to share just the explorer.")
+        raise typer.Exit(code=1)
+    if not db.exists() and not studio_on:
         print(f"No map at {db} yet. Run `litmapr add yourcomic.cbz` first.")
         raise typer.Exit(code=1)
+    if not db.exists():
+        page = "studio"  # nothing to explore yet: start where comics get added
     llm_factory = (lambda: make_text_llm(model)) if narrator_on else None
-    url = f"http://{host}:{port}"
-    print(f"litmapr explorer running at {url}  (Ctrl+C to stop)")
+    runner = JobRunner() if studio_on else None
+    url = f"http://{'127.0.0.1' if host == '0.0.0.0' else host}:{port}/{page}"
+    print(f"litmapr running at {url}  (Ctrl+C to stop)")
+    if studio_on and page != "studio":
+        print(f"Studio (add comics, merge, pictures): http://{host}:{port}/studio")
     if open_browser:
         threading.Timer(1.0, webbrowser.open, args=[url]).start()
-    from litmapr.portraits import DEFAULT_PORTRAIT_DIR
-
-    app_ = create_app(db, llm_factory, DEFAULT_PORTRAIT_DIR if portraits_on else None)
+    app_ = create_app(
+        db, llm_factory, DEFAULT_PORTRAIT_DIR if portraits_on else None, runner
+    )
     uvicorn.run(app_, host=host, port=port, log_level="warning")
+
+
+@app.command()
+def studio(
+    port: Annotated[int, typer.Option(help="Port for the web page.")] = 8000,
+    open_browser: Annotated[
+        bool, typer.Option("--open/--no-open", help="Open the page in your browser.")
+    ] = True,
+    model: Annotated[str, typer.Option(help="Ollama text model for the narrator.")] = (
+        DEFAULT_NARRATOR_MODEL
+    ),
+    db: Annotated[Path, typer.Option(help="The story database.")] = DEFAULT_DB,
+) -> None:
+    """Open the Studio: add comics and run every command from your browser."""
+    serve(
+        host="127.0.0.1",
+        port=port,
+        narrator_on=True,
+        open_browser=open_browser,
+        portraits_on=True,
+        studio_on=True,
+        model=model,
+        db=db,
+        page="studio",
+    )
+
+
+@app.command()
+def remove(
+    issue: Annotated[
+        str,
+        typer.Argument(
+            help='The issue to remove, as `works` shows it, e.g. "Fantastic Four #570".'
+        ),
+    ],
+    db: Annotated[Path, typer.Option(help="The story database.")] = DEFAULT_DB,
+) -> None:
+    """Take an issue off the map, with everything found in it."""
+    with StoryStore(db) as store:
+        story = store.load()
+        wanted = issue.strip().lower()
+        found = [
+            w
+            for w in story.works
+            if w.id == issue or narrator.work_label(w).lower() == wanted
+        ]
+        if not found:
+            print(f"No issue called '{issue}'. Try `litmapr works`.")
+            raise typer.Exit(code=1)
+        for work in found:
+            store.delete_work(work.id)
+        orphans = store.remove_orphans()
+    print(
+        f"removed {narrator.work_label(found[0])} and {orphans} entities "
+        "that appeared nowhere else"
+    )

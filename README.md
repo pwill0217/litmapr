@@ -33,6 +33,28 @@ It is developed on a GTX 1060 (6 GB) with 64 GB of RAM. The big text model mostl
 
 ## Usage
 
+### The Studio (no terminal needed)
+
+```
+uv run litmapr studio
+```
+
+This opens the **Studio** in your browser: a control panel for everything litmapr does.
+
+- **Library** lists every issue on the map in reading order, and removes ones you don't want.
+- **Add comics**: browse to a `.cbz` or `.pdf` (or a whole folder), or drag files onto the page, then **Add to map**.
+- **Omnibus** drafts a contents file from the book's bookmarks and lets you edit it, with mistakes caught before saving.
+- **Tidy up** merges duplicates (preview first), merges two entries by hand, and finds callbacks.
+- **Pictures** makes pictures for chosen kinds, or looks on one page you pick.
+- **Share** downloads your map, or imports someone else's.
+- **Models** picks which Ollama models do the work.
+
+Each command runs in the background with its live output in the console on the right, one at a time so they don't fight over the GPU, and can be stopped. The console also shows the exact terminal command, so you can learn the CLI as you go. **Map** at the top switches to the 3D explorer.
+
+The Studio can read your folders and run commands, so it only works from your own computer: it is switched off when the server is opened to the network (`--host 0.0.0.0`), and it refuses requests from other websites.
+
+### From the terminal
+
 ```
 uv run litmapr add "D:\comics\FF_570.cbz" --year 2009 --month 10
 uv run litmapr add "D:\comics\Hickman FF"        # a whole folder, one issue at a time
@@ -98,7 +120,9 @@ Bookmarks come from a PDF's table of contents or a CBZ's ComicInfo page bookmark
 | `contents` | Draft an omnibus's contents file from its bookmarks |
 | `portraits` | Cut pictures of characters, devices, places, factions and events out of the comics |
 | `narrate` | Have the narrator explain an entity, up to a reading point (`--style briefing`) |
-| `serve` | Start the 3D explorer at http://127.0.0.1:8000 |
+| `studio` | Open the Studio: every command from your browser |
+| `serve` | Start the 3D explorer at http://127.0.0.1:8000 (and the Studio at `/studio`) |
+| `remove` | Take an issue off the map, e.g. `remove "Fantastic Four #570"` |
 | `export` / `import` | Share a map as JSON (no comic pages included) |
 
 Run any command with `--help` for its options.
